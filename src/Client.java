@@ -15,12 +15,14 @@ public class Client {
 	private DatagramSocket socketUDP = null; // UDP channel
 	private final String hostname;
 	private final int portNumber;
+	private MulticastReceiver receiver = null; // receiver multicast (every client receive at the same IP:port )
 	
-	public Client(String hostname,int portNumber,String name) throws UnknownHostException, IOException {
+	public Client(String hostname,int portNumber,String multicastGroupAddres, int multicastGroupPort) throws UnknownHostException, IOException {
 		this.socket = new Socket(hostname, portNumber);
 		this.socketUDP = new DatagramSocket(socket.getLocalPort());
 		this.hostname = hostname;
 		this.portNumber = portNumber;
+		this.receiver = new MulticastReceiver(socket, multicastGroupAddres, multicastGroupPort);
 		this.startWorking();
 	}
 	
@@ -30,6 +32,7 @@ public class Client {
 
 		
         try {
+        	receiver.start();
             // create socket
             // in & out streams
         	BufferedReader in = new BufferedReader(new InputStreamReader(socket.getInputStream()));
@@ -39,14 +42,12 @@ public class Client {
         				try {
 	        	            System.out.println(in.readLine());
 						} catch (IOException e) {
-							// TODO Auto-generated catch block
 							e.printStackTrace();
 						}
                 	}
         		}
         	};
         	
-//        	Scanner reader = new Scanner(System.in).useDelimiter("\\n");
         	Scanner reader = new Scanner(System.in);  // Reading from System.in
 			PrintWriter out;
 			out = new PrintWriter(socket.getOutputStream(), true);
@@ -56,21 +57,21 @@ public class Client {
 	        			while(true) {
 	                        // send msg, read response
 	        				String message = reader.nextLine();
-	        				System.out.println("ME >> " + message);
-	        				if(message.endsWith(" U")) // jezeli chcemy wyslac przez kanal UDP
-	        				{
+	        				if(message.endsWith(" U")) { //send by UDP channel
 	        		        	InetAddress address = InetAddress.getByName(hostname); 
 	        		        	byte[] sendBuffer = message.getBytes();
 	        		        	DatagramPacket sendPacket = new DatagramPacket(sendBuffer, sendBuffer.length, address, portNumber);
-	        		            
-									socketUDP.send(sendPacket);
-								 // wyslij na localhost port 12345 - tam slucha nasz serwer
-	        				}else {
+								socketUDP.send(sendPacket);
+	        				} else if(message.endsWith(" M")) { // send multicast mesage
+	        		            InetAddress group = InetAddress.getByName(receiver.getMulticastGroupAddres());
+	        		            byte[] sendBuffer = message.getBytes();
+	        		            DatagramPacket packet = new DatagramPacket(sendBuffer, sendBuffer.length, group, receiver.getMulticastGroupPort());
+	        		            socketUDP.send(packet);
+	        		        }else {
 			                    out.println(message);
 	        				}
 	                	}
         			} catch (IOException e) {
-						// TODO Auto-generated catch block
 						e.printStackTrace();
 					}
         		}
@@ -81,17 +82,15 @@ public class Client {
         } catch (Exception e) {
             e.printStackTrace();
         } 
-//        finally {
-//            if (socket != null){
-//                socket.close();
-//            }
-//        }
 	}
-
+	
+	
+//	@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@2
+	
     public static void main(String[] args) throws IOException {
 
         @SuppressWarnings("unused")
-		Client javaClient = new Client("localhost", 12348, "xd");
+		Client javaClient = new Client("localhost", 10001, "230.1.1.1",8888);
     }
 
 }

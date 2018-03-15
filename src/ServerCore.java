@@ -56,7 +56,6 @@ public class ServerCore {
 		
 		while(clientsThreadsIteartor.hasNext()) {
 			TCPServerSender clientThread = clientsThreadsIteartor.next();
-			System.out.println(clientThread.getID() + " vs " + ID);
 			if(!clientThread.getID().equals(ID)) {
 				clientThread.sendMessage(msg, ID);
 			}
@@ -92,7 +91,7 @@ public class ServerCore {
 	public static void main(String[] args) {
 		try {
 			@SuppressWarnings("unused")
-			ServerCore tcpServerCore = new ServerCore(12348);
+			ServerCore tcpServerCore = new ServerCore(10001);
 		} catch (IOException e) {
 			e.printStackTrace();
 		}
